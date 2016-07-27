@@ -5,11 +5,11 @@ alt+N bring a popup menu to quickly rename active object
 ### Description
 Just click the name of the object to rename it right in the popup
 
-according to the object name, some proposition might appears under the current name
-just click the proposition to use it as new name.
-(they appears only if the proposition are available)
+According to the object name, some proposition might appears under the current name
+Click to use it as new name.
+(they appears only if the name is free)
 
-Current proposition that may pop-up:
+Current proposition that may pop-up:  
 Cube.002 >> Cube
 (only if Cube not exists)
 
