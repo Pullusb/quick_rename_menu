@@ -20,6 +20,6 @@ Cube.L >> Cube.R
 ### why ?
 
 When everything is well named and well ordered the project is better.
-but naming is long and boring and stop your often stop your workflow !
+But naming is a long and boring task that stop you often in your workflow !
 This mainly allow you to rename object even in fullscreen without opening 'n' sidebar or seaching in the outliner or properties.
-the propositions are here only to be a bit more convenient.
+The propositions are here only to be a bit more convenient.
