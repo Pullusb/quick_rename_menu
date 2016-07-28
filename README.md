@@ -22,7 +22,8 @@ Cube.L >> Cube.R
 When everything is well named and well ordered the project is better.
 But naming is a long and boring task that stop you often in your workflow !
 This mainly allow you to rename object even in fullscreen without opening 'n' sidebar or seaching in the outliner or properties.
-The propositions are here only to be a bit more convenient.
+The propositions are here only to be a bit more convenient.  
+About the shortcut, I choose "Alt+N" because it's easy to remember, think "**alt**ernative *N*ame"  
 
 #### update 28/07/2016
 
