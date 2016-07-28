@@ -2,7 +2,7 @@ bl_info = {
     "name": "Quick Rename",
     "description": "Pop a menu with alt+N to quickly rename active object",
     "author": "Samuel Bernou",
-    "version": (1, 0, 0),
+    "version": (1, 0, 1),
     "blender": (2, 77, 0),
     "location": "View3D",
     "warning": "",
@@ -13,42 +13,71 @@ bl_info = {
 import bpy, re
 
 
-def regNumber(name, change = False):
+def regNumber(name, bname, change = False):
+    if not bname:
+        number = re.search('\.\d{3}$',name)
+        if number:
+            # print (number.group() )
+            new = re.sub('\.\d{3}$', '', name)
+            if bpy.data.objects.get(new):
+                return(False)#object exists
 
-    number = re.search('\.\d{3}$',name)
-    if number:
-        # print (number.group() )
-        new = re.sub('\.\d{3}$', '', name)
-        if bpy.data.objects.get(new):
-            #print ('object exist')
-            return(False)
-        else:
-            if change:
-                bpy.context.object.name = new
-            else:
-                return(new)
+            else: # name available
+                if change:
+                    bpy.context.active_object.name = new
+                else:
+                    return(new)
+
+    else:
+        number = re.search('\.\d{3}$',bname)
+        if number:
+            # print (number.group() )
+            new = re.sub('\.\d{3}$', '', bname)
+            if bpy.data.armatures[name].bones.get(new):
+                return(False)#bone exists
+
+            else: # name available
+                if change:
+                    bpy.context.active_bone.name = new
+                else:
+                    return(new)
 
 
-def regSide(name, change = False):
+def regSide(name, bname, change = False):
 #    side = re.search('[\._][LR]$',name)
 #    if side:
 #        print (side.group() )
-
     sidext = ['.L', '.R', '_L', '_R']
-    if name[-2:] in sidext:
-        if name[-1:] == 'L':
-            opposite = name[:-1] + 'R'
-        elif name[-1:] == 'R':
-            opposite = name[:-1] + 'L'
+    if not bname:
+        if name[-2:] in sidext:
+            if name[-1:] == 'L':
+                opposite = name[:-1] + 'R'
+            elif name[-1:] == 'R':
+                opposite = name[:-1] + 'L'
 
-        if bpy.data.objects.get(opposite):
-            # print ('object name exist')
-            return(False)
-        else:
-            if change:
-                bpy.context.object.name = opposite
-            else:
-                return(opposite)
+            if bpy.data.objects.get(opposite):
+                return(False)#object exists
+
+            else: # name available
+                if change:
+                    bpy.context.active_object.name = opposite
+                else:
+                    return(opposite)
+
+    else:
+        if bname[-2:] in sidext:
+            if bname[-1:] == 'L':n
+                opposite = bname[:-1] + 'R'
+            elif bname[-1:] == 'R':
+                opposite = bname[:-1] + 'L'
+            if bpy.data.armatures[name].bones.get(opposite):
+                return(False)#bone exists
+
+            else: # name available
+                if change:
+                    bpy.context.active_bone.name = opposite
+                else:
+                    return(opposite)
 
 
 class mirrorExt(bpy.types.Operator):
@@ -58,7 +87,12 @@ class mirrorExt(bpy.types.Operator):
     bl_options = {"REGISTER"}
 
     def execute(self, context):
-        regSide(context.object.name, change = True)
+        ob = context.active_object
+        if ob.type == 'ARMATURE' and ob.mode in {'EDIT', 'POSE'}:
+            b = context.active_bone
+            regSide(ob.name, b.name, change = True)
+        else:
+            regSide(ob.name, False, change = True)
         return {"FINISHED"}
 
 
@@ -69,7 +103,12 @@ class DeleteNumber(bpy.types.Operator):
     bl_options = {"REGISTER"}
 
     def execute(self, context):
-        regNumber(context.object.name, change = True)
+        ob = context.active_object
+        if ob.type == 'ARMATURE' and ob.mode in {'EDIT', 'POSE'}:
+            b = context.active_bone
+            regNumber(ob.name, b.name, change = True)
+        else:
+            regNumber(ob.name, False, change = True)
         return {"FINISHED"}
 
 
@@ -81,33 +120,35 @@ class PopQuickRenameMenu(bpy.types.Menu):
         layout = self.layout
         #layout.operator_context = 'INVOKE_REGION_WIN'
         #layout.operator("transform.translate", 'Grab', icon='MOD_SUBSURF')
+
         ob = context.active_object
         name = ob.name
 
-        row = layout.row()
-#        row.label(text="obj name :", icon='OBJECT_DATA')
-#        row = layout.row(align=True)
-        row.prop(ob, "name", text="")
-
         if ob.type == 'ARMATURE' and ob.mode in {'EDIT', 'POSE'}:
-            bone = context.active_bone
-            if bone:
+            b = context.active_bone
+            if b:
                 row = layout.row()
-                row.label(text="", icon='BONE_DATA')
-                row.prop(bone, "name", text="")
+                #row.label(text="", icon='BONE_DATA')
+                row.prop(b, "name", text="", icon='BONE_DATA')
+                bone = b.name
+
+        else:
+            row = layout.row()
+            # row.label(text="obj name :", icon='OBJECT_DATA')
+            # row = layout.row(align=True)
+            row.prop(ob, "name", text="", icon='OBJECT_DATA')
+            bone = False
 
         # row.label(text='change to: ' , icon=OUTLINER_OB_MESH)
+        row = layout.row()
+        row.separator()
 
-        rNum = regNumber(name)
-        # print(rNum)
-
+        rNum = regNumber(name, bone)
         if rNum:
             row = layout.row()
             row.operator('name.delete_number', rNum, icon='FORWARD')
 
-        rSide = regSide(name)
-        # print(rSide)
-
+        rSide = regSide(name, bone)
         if rSide:
             row = layout.row()
             row.operator('name.mirror_ext', rSide, icon='FORWARD')
