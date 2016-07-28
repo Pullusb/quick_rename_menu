@@ -66,7 +66,7 @@ def regSide(name, bname, change = False):
 
     else:
         if bname[-2:] in sidext:
-            if bname[-1:] == 'L':n
+            if bname[-1:] == 'L':
                 opposite = bname[:-1] + 'R'
             elif bname[-1:] == 'R':
                 opposite = bname[:-1] + 'L'
