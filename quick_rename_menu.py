@@ -13,104 +13,142 @@ bl_info = {
 import bpy, re
 
 
-def regNumber(name, bname, change = False):
-    if not bname:
-        number = re.search('\.\d{3}$',name)
-        if number:
-            # print (number.group() )
-            new = re.sub('\.\d{3}$', '', name)
-            if bpy.data.objects.get(new):
-                return(False)#object exists
+###---FUNCTIONS---
 
-            else: # name available
-                if change:
-                    bpy.context.active_object.name = new
-                else:
-                    return(new)
-
-    else:
-        number = re.search('\.\d{3}$',bname)
-        if number:
-            # print (number.group() )
-            new = re.sub('\.\d{3}$', '', bname)
-            if bpy.data.armatures[name].bones.get(new):
-                return(False)#bone exists
-
-            else: # name available
-                if change:
-                    bpy.context.active_bone.name = new
-                else:
-                    return(new)
-
-
-def regSide(name, bname, change = False):
-#    side = re.search('[\._][LR]$',name)
-#    if side:
-#        print (side.group() )
+def changeNameSide(name):
+    '''Return the name side switched if already ends by a side (else return False)'''
     sidext = ['.L', '.R', '_L', '_R']
-    if not bname:
-        if name[-2:] in sidext:
-            if name[-1:] == 'L':
-                opposite = name[:-1] + 'R'
-            elif name[-1:] == 'R':
-                opposite = name[:-1] + 'L'
-
-            if bpy.data.objects.get(opposite):
-                return(False)#object exists
-
-            else: # name available
-                if change:
-                    bpy.context.active_object.name = opposite
-                else:
-                    return(opposite)
-
+    if name[-2:] in sidext:
+        if name[-1:] == 'L':
+            return(name[:-1] + 'R')
+        elif name[-1:] == 'R':
+            return(name[:-1] + 'L')
     else:
-        if bname[-2:] in sidext:
-            if bname[-1:] == 'L':
-                opposite = bname[:-1] + 'R'
-            elif bname[-1:] == 'R':
-                opposite = bname[:-1] + 'L'
-            if bpy.data.armatures[name].bones.get(opposite):
-                return(False)#bone exists
+        return (False)
 
-            else: # name available
-                if change:
-                    bpy.context.active_bone.name = opposite
-                else:
-                    return(opposite)
+def checkExists(name, bname, change, new):
+    if bname: #check bone
+        if bpy.data.armatures[name].bones.get(new):
+            return(False)#bone exists
+        else: # name available
+            if change:
+                bpy.context.active_bone.name = new
+            else:
+                return(new)
+    else: #check object
+        # print ("CHECK EXIST", new)
+        if bpy.data.objects.get(new):
+            return(False)#object exists
+        else: # name available
+            if change:
+                bpy.context.active_object.name = new
+            else:
+                return(new)
 
+def defineBase(name,bname):
+    if bname:
+        return (bname)
+    else:
+        return (name)
 
-class mirrorExt(bpy.types.Operator):
-    bl_idname = "name.mirror_ext"
-    bl_label = "Mirror name extension"
-    bl_description = "change to this name"
-    bl_options = {"REGISTER"}
+####---RULES---
 
-    def execute(self, context):
-        ob = context.active_object
-        if ob.type == 'ARMATURE' and ob.mode in {'EDIT', 'POSE'}:
-            b = context.active_bone
-            regSide(ob.name, b.name, change = True)
-        else:
-            regSide(ob.name, False, change = True)
-        return {"FINISHED"}
+def DeleteNumber(name, bname, change = False):
+    '''object.001 > object'''
+    base = defineBase(name,bname)
+    number = re.search('\.\d{3}$',base)
+    if number:
+        # print (number.group() )
+        new = re.sub('\.\d{3}$', '', base)
+        return(checkExists(name, bname, change, new))
 
-
-class DeleteNumber(bpy.types.Operator):
+class DeleteNumberOP(bpy.types.Operator):
     bl_idname = "name.delete_number"
     bl_label = "Delete Number"
     bl_description = "change to this name"
     bl_options = {"REGISTER"}
 
     def execute(self, context):
-        ob = context.active_object
-        if ob.type == 'ARMATURE' and ob.mode in {'EDIT', 'POSE'}:
-            b = context.active_bone
-            regNumber(ob.name, b.name, change = True)
+        if context.active_object.type == 'ARMATURE' and context.active_object.mode in {'EDIT', 'POSE'}:
+            DeleteNumber(context.active_object.name, context.active_bone.name, change = True)
         else:
-            regNumber(ob.name, False, change = True)
+            DeleteNumber(context.active_object.name, False, change = True)
+            return {"FINISHED"}
+
+
+def mirrorExt(name, bname, change = False):
+    '''object.L > object.R'''
+#    side = re.search('[\._][LR]$',name)
+#    if side:
+#        print (side.group() )
+    base = defineBase(name,bname)
+    opposite = changeNameSide(base)
+    if opposite:
+        return(checkExists(name, bname, change, opposite))
+
+class mirrorExtOP(bpy.types.Operator):
+    bl_idname = "name.mirror_ext"
+    bl_label = "Mirror name extension"
+    bl_description = "change to this name"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        if context.active_object.type == 'ARMATURE' and context.active_object.mode in {'EDIT', 'POSE'}:
+            mirrorExt(context.active_object.name, context.active_bone.name, change = True)
+        else:
+            mirrorExt(context.active_object.name, False, change = True)
         return {"FINISHED"}
 
+def LeftFromNumber(name, bname, change = False):
+    '''object.001 > object.L'''
+    base = defineBase(name,bname)
+    number = re.search('\.\d{3}$',base)
+    if number:
+        # print (number.group() )
+        new = re.sub('\.\d{3}$', '', base)
+        new += '.L'
+        return(checkExists(name, bname, change, new))
+
+class LeftFromNumberOP(bpy.types.Operator):
+    bl_idname = "name.mirror_from_left"
+    bl_label = "Mirror name extension"
+    bl_description = "change to this name"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        if context.active_object.type == 'ARMATURE' and context.active_object.mode in {'EDIT', 'POSE'}:
+            LeftFromNumber(context.active_object.name, context.active_bone.name, change = True)
+        else:
+            LeftFromNumber(context.active_object.name, False, change = True)
+        return {"FINISHED"}
+
+
+def mirrorSideFromNumber(name, bname, change = False):
+    '''object.L.001 > object.R'''
+    base = defineBase(name,bname)
+    number = re.search('[\._][L,R]\.\d{3}$',base)
+    if number:
+        # print (number.group() )
+        new = re.sub('\.\d{3}$', '', base)
+        new = changeNameSide(new)
+        return(checkExists(name, bname, change, new))
+
+class mirrorSideFromNumberOP(bpy.types.Operator):
+    bl_idname = "name.mirror_side_from_num"
+    bl_label = "Mirror name extension"
+    bl_description = "change to this name"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        if context.active_object.type == 'ARMATURE' and context.active_object.mode in {'EDIT', 'POSE'}:
+            mirrorSideFromNumber(context.active_object.name, context.active_bone.name, change = True)
+        else:
+            mirrorSideFromNumber(context.active_object.name, False, change = True)
+        return {"FINISHED"}
+
+
+
+###---MENU---
 
 class PopQuickRenameMenu(bpy.types.Menu):
     bl_idname = "view3d.pop_quick_rename_menu"
@@ -143,16 +181,25 @@ class PopQuickRenameMenu(bpy.types.Menu):
         row = layout.row()
         row.separator()
 
-        rNum = regNumber(name, bone)
+        rNum = DeleteNumber(name, bone)
         if rNum:
             row = layout.row()
             row.operator('name.delete_number', rNum, icon='FORWARD')
 
-        rSide = regSide(name, bone)
+        rSide = mirrorExt(name, bone)
         if rSide:
             row = layout.row()
             row.operator('name.mirror_ext', rSide, icon='FORWARD')
 
+        rLeft = LeftFromNumber(name, bone)
+        if rLeft:
+            row = layout.row()
+            row.operator('name.mirror_from_left', rLeft, icon='FORWARD')
+
+        rSideExt = mirrorSideFromNumber(name, bone)
+        if rSideExt:
+            row = layout.row()
+            row.operator('name.mirror_side_from_num', rSideExt, icon='FORWARD')
 
 addon_keymaps = []
 def register_keymaps():
@@ -175,11 +222,13 @@ def unregister_keymaps():
 
 
 def register():
-    register_keymaps()
+    if not bpy.app.background:
+        register_keymaps()
     bpy.utils.register_module(__name__)
 
 def unregister():
-    unregister_keymaps()
+    if not bpy.app.background:
+        unregister_keymaps()
     bpy.utils.unregister_module(__name__)
 
 if __name__ == "__main__":
