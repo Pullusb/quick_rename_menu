@@ -1,6 +1,10 @@
 # Quick rename menu
 
 alt+N bring a popup menu to quickly rename active object
+  
+**[Download latest](https://raw.githubusercontent.com/Pullusb/quick_rename_menu/master/quick_rename_menu.py)** (right click, save Target as)  
+  
+---
 
 ### Description
 Just click the name of the object to rename it right in the popup
